@@ -1,25 +1,20 @@
 from socket import *
+import smtplib
+from email.message import EmailMessage
+
 def main():
-    server_name = 'localhost'
-    server_port = 2525
-    client_socket = socket(AF_INET, SOCK_STREAM)
-    client_socket.connect((server_name, server_port))
+    smtp_host = '127.0.0.1'
+    smtp_port = 2525
 
-    greeting = client_socket.recv(1024).decode().strip()
-    print(f"S: {greeting}")
+    msg = EmailMessage()
+    msg['From'] = 'sender@example.com'
+    msg['To'] = 'receiver@example.com'
+    msg['Subject'] = 'Test email'
+    msg.set_content("Hello receiver, \n\nHope you're doing well.\nBecause I sure ain't.\n(Just kidding)\n\nSender")
 
-    # Example SMTP connection
-    send_command(client_socket, "FAKE command")
-    send_command(client_socket, "HELO maw564@pitt.edu")
-
-    client_socket.close()
-
-def send_command(socket, cmd):
-    print(f"C: {cmd}")
-    command = cmd + "\r\n"
-    socket.send(command.encode())
-    response = socket.recv(1024)
-    print(f"S: {response.decode()}")
+    smtp = smtplib.SMTP(smtp_host, smtp_port)
+    smtp.set_debuglevel(1)
+    smtp.send_message(msg)
 
 if __name__ == "__main__":
     main()
