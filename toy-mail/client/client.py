@@ -9,11 +9,10 @@ def main():
     msg = EmailMessage()
     msg['From'] = 'sender@example.com'
     msg['To'] = 'receiver@example.com'
-    msg['Subject'] = 'Test email'
-    msg.set_content("Hello receiver, \n\nHope you're doing well.\nBecause I sure ain't.\n(Just kidding)\n\nSender")
+    msg['Subject'] = 'Test email 2'
+    msg.set_content("Hello receiver, \n\nI have a project due tonight.\nPlease send help.\nI don't have much time to spare please.\n\nSender")
 
     smtp = smtplib.SMTP(smtp_host, smtp_port)
-    smtp.set_debuglevel(1)
     smtp.send_message(msg)
 
 if __name__ == "__main__":

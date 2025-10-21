@@ -1,4 +1,6 @@
 from socket import *
+import os 
+from datetime import datetime
 
 def main():
     server_host = '127.0.0.1'
@@ -18,11 +20,16 @@ def handle_commands(conn, addr):
     data_buffer = ""
     sending_data = False
     lines = []
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    mail_dir = os.path.join(base_dir, "..", "saved_mail")
+    os.makedirs(mail_dir, exist_ok=True)
     while True:
         command = conn.recv(1024)
         if not command:
             break
         data_buffer += command.decode()
+        print("TESTING data_buffer:", data_buffer, "\n")
 
         while "\r\n" in data_buffer:
             line, data_buffer = data_buffer.split("\r\n", 1)
@@ -33,8 +40,16 @@ def handle_commands(conn, addr):
                 if line == ".": 
                     print("📧 Received email:")
                     print("\n".join(lines))
+                    # Tell client email has been succesfully accepted and stored
                     conn.send(b"250 OK: Message accepted\r\n")
                     sending_data = False
+                    # Save to file
+                    date_format = "%Y-%m-%d_%H-%M-%S"
+                    filename = "email-" + datetime.now().strftime(date_format) + ".txt"
+                    filepath = os.path.join(mail_dir, filename)
+                    with open(filepath, "w", encoding="utf-8") as f:
+                        for line in lines:
+                            f.write(line + "\n")
                     lines.clear()
                 else:
                     lines.append(line)
@@ -45,12 +60,10 @@ def handle_commands(conn, addr):
                 conn.send(b"250 Hello\r\n")
             elif cmd.startswith("MAIL FROM:"):
                 conn.send(b"250 OK\r\n")
-                mail_from = line[10:].strip()
             elif cmd.startswith("RCPT TO:"):
                 conn.send(b"250 OK\r\n")
-                rcpt_to = line[8:].strip()
             elif cmd.startswith("DATA"):
-                conn.send(b"354 END DATA WITH <CR><LF>.<CR><LF>\r\n")
+                conn.send(b"354 OK\r\n")
                 sending_data = True
             elif cmd.startswith("QUIT"):
                 conn.send(b"221 OK\r\n")
