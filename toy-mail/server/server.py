@@ -24,6 +24,9 @@ def handle_commands(conn, addr):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     mail_dir = os.path.join(base_dir, "..", "saved_mail")
     os.makedirs(mail_dir, exist_ok=True)
+
+    sender_email=None
+    recipient_email = None
     while True:
         command = conn.recv(1024)
         if not command:
@@ -43,14 +46,27 @@ def handle_commands(conn, addr):
                     # Tell client email has been succesfully accepted and stored
                     conn.send(b"250 OK: Message accepted\r\n")
                     sending_data = False
-                    # Save to file
-                    date_format = "%Y-%m-%d_%H-%M-%S"
-                    filename = "email-" + datetime.now().strftime(date_format) + ".txt"
-                    filepath = os.path.join(mail_dir, filename)
-                    with open(filepath, "w", encoding="utf-8") as f:
-                        for line in lines:
-                            f.write(line + "\n")
-                    lines.clear()
+
+                    if recipient_email:
+                        recipient_dir = os.path.join(mail_dir, recipient_email)
+                        recipient_dir = recipient_dir.replace("<", "")
+                        recipient_dir = recipient_dir.replace(">", "")
+                        os.makedirs(recipient_dir, exist_ok=True)
+
+                        # lines.insert(0, f"Subject: (Subject not provided by header)")
+                        # lines.insert(0, f"To: {recipient_email}")
+                        # lines.insert(0, f"From: {sender_email}")
+
+                        # Save to file
+                        date_format = "%Y-%m-%d_%H-%M-%S"
+                        filename = "email-" + datetime.now().strftime(date_format) + ".txt"
+                        filepath = os.path.join(recipient_dir, filename)
+                        with open(filepath, "w", encoding="utf-8") as f:
+                            for line in lines:
+                                f.write(line + "\n")
+
+                        print(f"Message received and forwarded to local mailbox: {recipient_email}")
+                        lines.clear()
                 else:
                     lines.append(line)
                 continue
@@ -60,8 +76,10 @@ def handle_commands(conn, addr):
                 conn.send(b"250 Hello\r\n")
             elif cmd.startswith("MAIL FROM:"):
                 conn.send(b"250 OK\r\n")
+                sender_email = line[10:].strip()
             elif cmd.startswith("RCPT TO:"):
                 conn.send(b"250 OK\r\n")
+                recipient_email = line[8:].strip()
             elif cmd.startswith("DATA"):
                 conn.send(b"354 OK\r\n")
                 sending_data = True
